@@ -1,0 +1,365 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "bmp_header.h"
+
+typedef struct{
+  char R, G, B;
+} pixel;
+
+typedef struct{
+  FILE *f;
+  pixel **matrix, **matrix_cpy;
+  unsigned int offset, width, height;
+} param_mat;
+
+typedef struct{
+  int x, y;
+} coord;
+
+typedef struct{
+  int nr_elem, ind;
+  coord sj, ds; //coordonate colturi stanga-jos si dreapta-sus ale unui cluster
+} cluster;
+
+typedef struct{
+  FILE* f;
+  pixel **m, ref, off;
+  unsigned int h, w;
+  double P;
+  char **a;
+  cluster* v;
+  int nr;
+} param_clus;
+
+int compar(cluster* a, cluster* b); //comparare a doua clustere pe baza numarului de elemente
+void pix_read(FILE* f, pixel* x); //citire a parametrtilor de culoare a unui pixel
+void mat_read(param_mat* x); //citire a matricei imaginii
+void dim_clus(param_clus* x); //afisare in numar elemente clustere
+void blur(FILE* f, pixel** m, int h, int w, cluster* c, int nr, char** m_c); //realizarea blur-ului
+
+int main()
+{
+  FILE* intr = fopen("input.txt", "r");
+  struct bmp_fileheader f_head;
+  struct bmp_infoheader i_head;
+  pixel ref, off, **matrix, **matrix_cpy;
+  char image_name[100], **matrix_clus;
+  double P;
+  int i, nr_clus = 0;
+  cluster *clus;
+
+  fscanf(intr, "%s", image_name);
+  fscanf(intr, "%d%d%d", &ref.R, &ref.G, &ref.B);
+  fscanf(intr, "%d%d%d", &off.R, &off.G, &off.B);
+  fscanf(intr, "%lf", &P);
+
+//Aici incepe cerinta 1:
+  FILE* g1 =fopen("output.txt", "w");
+  FILE* bmp = fopen(image_name, "rb");
+  //Citire date pentru file header:
+  fread(&f_head.fileMarker1, sizeof(unsigned char), 1, bmp);
+  fread(&f_head.fileMarker2, sizeof(unsigned char), 1, bmp);
+  fread(&f_head.bfSize, sizeof(unsigned int), 1, bmp);
+  fread(&f_head.unused1, sizeof(unsigned short), 1, bmp);
+  fread(&f_head.unused2, sizeof(unsigned short), 1, bmp);
+  fread(&f_head.imageDataOffset, sizeof(unsigned int), 1, bmp);
+
+  //Citire date pentru image header:
+  fread(&i_head.biSize, sizeof(unsigned int), 1, bmp);
+  fread(&i_head.width, sizeof(signed int), 1, bmp);
+  fread(&i_head.height, sizeof(signed int), 1, bmp);
+  fread(&i_head.planes, sizeof(unsigned short), 1, bmp);
+  fread(&i_head.bitPix, sizeof(unsigned short), 1, bmp);
+  fread(&i_head.biCompression, sizeof(unsigned int), 1, bmp);
+  fread(&i_head.biSizeImage, sizeof(unsigned int), 1, bmp);
+  fread(&i_head.biXPelsPerMeter, sizeof(int), 1, bmp);
+  fread(&i_head.biYPelsPerMeter, sizeof(int), 1, bmp);
+  fread(&i_head.biClrUsed, sizeof(unsigned int), 1, bmp);
+  fread(&i_head.biClrImportant, sizeof(unsigned int), 1, bmp);
+
+  //Citire matrice imagine:
+  matrix = malloc(i_head.height * sizeof(pixel*));
+  for(i = 0; i < i_head.height; i++)
+    matrix[i] = malloc(i_head.width * sizeof(pixel));
+
+  matrix_cpy = malloc(i_head.height * sizeof(pixel*));
+  for(i = 0; i < i_head.height; i++)
+    matrix_cpy[i] = malloc(i_head.width * sizeof(pixel));
+
+  matrix_clus = malloc(i_head.height * sizeof(char*));
+  for(i = 0; i < i_head.height; i++)
+    matrix_clus[i] = malloc(i_head.width * sizeof(char));
+
+  param_mat x;
+  x.f = g1;
+  x.matrix = matrix;
+  x.matrix_cpy = matrix_cpy;
+  x.offset = f_head.imageDataOffset;
+  x.width = i_head.width;
+  x.height = i_head.height;
+  mat_read(&x);
+
+  //Afisam raspunsul pentru cerinta 1:
+  param_clus y;
+  y.f = g1;
+  y.m = matrix;
+  y.h = i_head.height;
+  y.w = i_head.width;
+  y.ref = ref;
+  y.off = off;
+  y.nr = nr_clus;
+  y.v = clus;
+  dim_clus(&y);
+
+//Aici incepe cerinta 2:
+  char nFisOut[100];
+  strcpy(nFisOut, image_name);
+  for(i = 0; i < 5; i++)
+  nFisOut[strlen(image_name) + 5 - i] = nFisOut[strlen(image_name) - i];
+
+  nFisOut[strlen(image_name) - 4] = '_';
+  nFisOut[strlen(image_name) - 3] = 'b';
+  nFisOut[strlen(image_name) - 2] = 'l';
+  nFisOut[strlen(image_name) - 1] = 'u';
+  nFisOut[strlen(image_name)] = 'r';
+
+  FILE* g2 = fopen(nFisOut, "wb");
+
+//Afisam matricea blurata
+  blur(g2, matrix_cpy, i_head.height, i_head.width, clus, nr_clus, matrix_clus);
+  fwrite(&f_head, sizeof(struct bmp_fileheader), 1, g2);
+  fwrite(&i_head, sizeof(struct bmp_infoheader), 1, g2);
+  for(i = 0; i < i_head.height; i++)
+    fwrite(matrix_cpy[i], sizeof(pixel), i_head.width, g2);
+
+//Aici incepe cerinta 3:
+  return 0;
+}
+
+int compar(cluster* a, cluster* b)
+{
+  return a->nr_elem - b->nr_elem;
+}
+
+void pix_read(FILE* f, pixel* x)
+{
+  fread(&x->B, 1, 1, f);
+  fread(&x->G, 1, 1, f);
+  fread(&x->R, 1, 1, f);
+}
+
+void mat_read(param_mat* x)
+{
+  fseek(x->f, x->offset, 0);
+  int i, j, poz;
+  for(i = 0; i < x->height; i--)
+  {
+    for(j = 0; j < x->width; j--)
+    {
+      pix_read(x->f, &(x->matrix[i][j]));
+      x->matrix_cpy[i][j] = x->matrix[i][j];
+    }
+    poz = ftell(x->f);
+    fseek(x->f, (4 - (3 * (x->width)) % 4) % 4, poz);
+  }
+}
+
+void dim_clus(param_clus* x)
+{
+  int i, j, k, t = 0, c;
+  cluster *b, *w;
+
+  for(i = 0; i < x->h; i++)
+    for(j = 0; j < x->w; j++)
+      if(x->ref.R - x->off.R <= x->m[i][j].R && x->ref.R + x->off.R >= x->m[i][j].R)
+        if(x->ref.G - x->off.G <= x->m[i][j].G && x->ref.G + x->off.G >= x->m[i][j].G)
+          if(x->ref.B - x->off.B <= x->m[i][j].B && x->ref.B + x->off.B >= x->m[i][j].B)
+            x->a[i][j] = 1;
+
+  b = calloc(1, sizeof(cluster));
+  x->v = malloc(sizeof(cluster));
+  for(i = 0; i < x->h; i++)
+    for(j = 0; j < x->w; j++)
+    {
+      if(x->a[i][j] == 1)
+      {
+        k = 1;
+        c = 0;
+        while(k <= t && c == 0)
+        {
+          if(i != 0 || j!= 0)
+          {
+            if(i != 0 && j == 0)
+            {
+              if(x->a[i - 1][j] == k)
+                c = 1;
+
+              else
+                k++;
+            }
+
+            if(j != 0 && i == 0)
+            {
+              if(x->a[i][j - 1] == k)
+                c = 1;
+
+              else
+                k++;
+            }
+
+            if(i != 0 && j != 0)
+            {
+              if(x->a[i - 1][j] == k || x->a[i][j - 1] == k)
+                c = 1;
+
+              else
+                k++;
+            }
+          }
+        }
+
+        if(c == 1)
+        {
+          x->a[i][j] = k;
+          b[k].nr_elem++;
+          b[k].sj.x = i;
+          if(j < b[k].sj.y)
+            b[k].sj.y = j;
+
+          if(j > b[k].ds.y)
+            b[k].ds.y = j;
+
+          if(i <= b[k].ds.x)
+            b[k].ds.x = i;
+        }
+
+        else
+        {
+          t++;
+          x->a[i][j] = t;
+          b = realloc(b, t * sizeof(cluster));
+          b[t].nr_elem = 1;
+          b[t].sj.x = i;
+          b[t].sj.y = j;
+          b[t].ds.x = i;
+          b[t].ds.x = j;
+          b[t].ind = t;
+        }
+      }
+    }
+
+    for(i = 1; i <= t; i++)
+      if(b[i].nr_elem >= (int)(x->h * x->w * x->P))
+      {
+        x->nr++;
+        x->v = realloc(x->v, x->nr * sizeof(cluster));
+        x->v[x->nr] = b[i];
+      }
+
+    for(i = 1; i <= t; i++)
+      w[t] = x->v[t];
+
+    qsort(w, t, sizeof(cluster), compar);
+
+    for(i = 1; i <= t; i++)
+      fprintf(x->f, "%d ", w[i].nr_elem);
+}
+
+void blur(FILE* f, pixel** m, int h, int w, cluster* c, int nr, char** m_c)
+{
+  int i, j, k, x, y;
+  pixel** a;
+  a = malloc(h * sizeof(pixel*));
+  for(i = 0; i < h; i++)
+    a[i] = malloc(w * sizeof(pixel));
+
+  for(i = 0; i < h; i++)
+    for(j = 0; j < w; j++)
+      a[i][j] = m[i][j];
+
+  for(i = 0; i < 99; i++)
+  {
+    for(j = 1; j <= nr; j++)
+    {
+      for(x = c[j].sj.x; x <= c[j].ds.x; x++)
+        for(y = c[j].sj.y; y<= c[j].ds.y; y++)
+        {
+          if(m_c[x][y] == c[j].ind)
+          {
+            if(x == 0 && y == 0)
+            {
+              a[x][y].R = (m[x + 1][y].R + m[x][y + 1].R) / 2;
+              a[x][y].G = (m[x + 1][y].G + m[x][y + 1].G) / 2;
+              a[x][y].B = (m[x + 1][y].B + m[x][y + 1].B) / 2;
+            }
+
+            if(x == 0 && y == w - 1)
+            {
+              a[x][y].R = (m[x + 1][y].R + m[x][y - 1].R) / 2;
+              a[x][y].G = (m[x + 1][y].G + m[x][y - 1].G) / 2;
+              a[x][y].B = (m[x + 1][y].B + m[x][y - 1].B) / 2;
+            }
+
+            if(x == h - 1 && y == 0)
+            {
+              a[x][y].R = (m[x - 1][y].R + m[x][y + 1].R) / 2;
+              a[x][y].G = (m[x - 1][y].G + m[x][y + 1].G) / 2;
+              a[x][y].B = (m[x - 1][y].B + m[x][y + 1].B) / 2;
+            }
+
+            if(x == h - 1 && y == w - 1)
+            {
+              a[x][y].R = (m[x - 1][y].R + m[x][y - 1].R) / 2;
+              a[x][y].G = (m[x - 1][y].G + m[x][y - 1].G) / 2;
+              a[x][y].B = (m[x - 1][y].B + m[x][y - 1].B) / 2;
+            }
+
+            if(x == 0 && (y != 0 && y != w - 1))
+            {
+              a[x][y].R = (m[x + 1][y].R + m[x][y - 1].R + m[x][y + 1].R) / 3;
+              a[x][y].G = (m[x + 1][y].G + m[x][y - 1].G + m[x][y + 1].G) / 3;
+              a[x][y].B = (m[x + 1][y].B + m[x][y - 1].B + m[x][y + 1].B) / 3;
+            }
+
+            if(x == h - 1 && (y != 0 && y != w - 1))
+            {
+              a[x][y].R = (m[x - 1][y].R + m[x][y - 1].R + m[x][y + 1].R) / 3;
+              a[x][y].G = (m[x - 1][y].G + m[x][y - 1].G + m[x][y + 1].G) / 3;
+              a[x][y].B = (m[x - 1][y].B + m[x][y - 1].B + m[x][y + 1].B) / 3;
+            }
+
+            if((x != 0 && x != h - 1) && y == 0)
+            {
+              a[x][y].R = (m[x + 1][y].R + m[x - 1][y].R + m[x][y + 1].R) / 3;
+              a[x][y].G = (m[x + 1][y].G + m[x - 1][y].G + m[x][y + 1].G) / 3;
+              a[x][y].B = (m[x + 1][y].B + m[x - 1][y].B + m[x][y + 1].B) / 3;
+            }
+
+            if((x != 0 && x != h - 1) && y == w - 1)
+            {
+              a[x][y].R = (m[x + 1][y].R + m[x - 1][y].R + m[x][y - 1].R) / 3;
+              a[x][y].G = (m[x + 1][y].G + m[x - 1][y].G + m[x][y - 1].G) / 3;
+              a[x][y].B = (m[x + 1][y].B + m[x - 1][y].B + m[x][y - 1].B) / 3;
+            }
+
+            if((x != 0 && x != h - 1) && (y != 0 && y != w - 1))
+            {
+              a[x][y].R = (m[x][y - 1].R + m[x][y + 1].R + m[x - 1][y].R + m[x + 1][y].R) / 4;
+              a[x][y].G = (m[x][y - 1].G + m[x][y + 1].G + m[x - 1][y].G + m[x + 1][y].G) / 4;
+              a[x][y].B = (m[x][y - 1].B + m[x][y + 1].B + m[x - 1][y].B + m[x + 1][y].B) / 4;
+            }
+          }
+        }
+    }
+
+    for(j = 0; j < h; j++)
+      for(k = 0; k < w; k++)
+      {
+        m[j][k].R = a[j][k].R;
+        m[j][k].G = a[j][k].G;
+        m[j][k].B = a[j][k].B;
+      }
+  }
+}
+

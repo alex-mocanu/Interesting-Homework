@@ -1,0 +1,118 @@
+	In programul de fata ne propunem sa implementam structura memoriei unui
+	server DNS folosind un hash.
+	Avem un fisier DNSfct.h ce pastreaza sabloanele de functii, structurile si 
+	declaratiile functiilor, un al fisier DNSfct.c, in care sunt implementate 
+	functiile si fisierul DNS.c, in care se apeleaza functiile pentru realizarea 
+	anumitor prelucrari.
+
+
+	-----------------------------Fisierul DNSfct.h------------------------------
+	In fisierul DNSfct.h intalnim mai intai sabloanele de functii:
+	-int (*TFCmp)(void*, void*), care reprezinta o funtie de comparare a doua 
+	elemente, pe care o vom folosi in introducerea elementelor in bucket-uri 
+	(liste), in pozitiile potrivite;
+	-typedef void (*TFElim)(void*), care reprezinta o functie de eliminare 
+	(eliberare de memorie).
+
+	De asemenea avem structurile:
+	-TWeb, folosita la pastrarea informatiei dintr-o celula, aceasta avand
+	campurile char* name, in care pastram numele paginii web, si char* ip, 
+	in care se pastreaza ip-ul paginii web;
+	-Bucket, in care pastram elementele cu o anumita caracteristica, cu campurile 
+	struct Bucket *urm, care pastreaza adresa elementului de dupa cel curent din 
+	bucket, si void* info, in care pastram informatia asociata unei celule. Avem 
+	de asemenea TB si AB, care reprezinta adresa unui element din bucket,
+	respectiv adresa legaturii catre acesta;
+	-Hash, adica tabela hash, cu campurile TB* buck, in care se pastreaza un
+	vector de bucket-uri alocat dinamic, si int M, care simbolizeaza numarul de
+	bucket-uri din hash.
+
+	Exista o serie de functii care prelucreaza hash-ul:
+	-void put(Hash *H, TFCmp cmp, char* Key, char* Value), care adauga o pereche 
+	(nume, ip) in tabela;
+	-char* get(Hash *H, char* Key), care returneaza ip-ul asociat unui nume din 
+	tabela, daca acesta exista;
+	-void remove_key(Hash *H, TFElim elim, char* Key), care elimina elementul cu 
+	numele primit ca parametru din tabela, daca acesta exista;
+	-int find(Hash H, char* Key), care returneaza 1 daca numele primit ca 
+	parametru a fost gasit in	tabela si 0 in caz contrar;
+	-void print(Hash *H, FILE* f), care afiseaza indexul fiecarui bucket din
+	tabela, care contine elemente, urmat de ip-urile elementelor;
+	-void print_bucket(Hash *H, FILE* f, int n), care afiseaza ip-urile
+	elementelor din bucket, daca acestea exista, si 'VIDA', daca bucket-ul nu
+	contine niciun element;
+
+	si functii aditionale folosite la realizarea celor dintai:
+	-int hashfct(char* Key, int M), care stabileste in ce bucket trebuie 
+	asezat/cautat un element, calculand valoare modulo M a sumei caracterelor 
+	elementului, unde M este numarul de bucket-uri;
+	-int InitHash(Hash *H, int M), care initializeaza un hash, adica ii fixeaza 
+	campul cu numarul de bucket-uri, aloca memorie pentru bucket-uri si le face
+	sa puncteze la NULL;
+	-void DistrBuck(AB aB, TFElim elim), care elibereaza memoria asociata unui 
+	bucket mergand pe fiecare celula din bucket si eliberandu-i memoria, trecand
+	mai departe pana ajunge la NULL;
+	-int InsOrd(AB aB, TFCmp cmp, TWeb ae), care insereaza un element in bucket
+	astfel incat sa se pastreze ordinea alfabetica in functie de numele paginii
+	web. Daca numele se afla deja in bucket nu mai este inserat o data.
+
+
+	-----------------------------Fisierul DNSfct.c------------------------------
+	In fisierul DNSfct.c sunt implementate functiile amintite mai sus. Pentru 
+	functiile aditionale am dat deja o explicatie cu privire la modul lor de 
+	implementare. Pentru celelate dam o explicatie aici.
+
+																--Functia put--
+	Determinam mai intai indexul bucket-ului in care facem adaugarea elementului. 
+	Declaram apoi un element de tipul TWeb si alocam memorie campurilor acestuia, 
+	dupa care copiem informatiile date ca parametrii in aceste campuri. Apelam 
+	apoi functia InsOrd pentru a introduce elementul in bucket. La final eliberam 
+	memoria alocata elementului declarat in functie.
+
+																--Functia get--
+	Determinam indexul bucket-ului in care facem cautarea elementului. Folosim 
+	apoi un pointer de tip TB pentru a parcurge bucket-ul. Cautarea se opreste 
+	fie la gasirea elementului fie la ajungerea la NULL. In cazul in care gasim 
+	elementul returnam ip-ul acestuia. Altfel returnam NULL.
+
+														--Functia remove_key--
+	Determinam indexul bucket-ului din care trebuie eliminat elementul. Folosim 
+	un pointer de tipul AB pentru parcurgerea bucket-ului si eventual modificarea 
+	lui si un pointer TB pentru evetuala eliminare. Parcurgem apoi bucket-ul pana 
+	ajungem fie la NULL fie la elementul cautat. Daca ajungem la elementul cautat 
+	il pastram in pointerul TB si il eliminam din lista, dupa care eliberam 
+	memoria alocata acestuia.
+
+																--Functia find--
+	Se repeta aceeasi pasi ca la functia get, dar la final nu se returneaza ip-ul 
+	elementului cautat, ci se intoarce 1 in cazul gasirii acestuia si 0 in caz 
+	contrar.
+
+														--Functia print_bucket--
+	Daca indexul dat ca parametru este mai mare decat numarul de bucket-uri - 1, 
+	nu facem nimic. In caz contrar parcurgem bucket-ul cu un pointer TB 
+	afisandu-i elementele. Daca bucket-ul este gol se afiseaza textul 'VIDA'.
+
+																--Functia print--
+	Trecem prin fiecare bucket al hash-ului. In cazul in care un bucket contine 
+	elemente afisam indexul lui urmat de elementele sale. In caz contrar nu 
+	afisam nimic.
+
+
+	-------------------------------Fisierul DNS.c-------------------------------
+	In acest fisier parsam fisierul de intrare si executam comenzile cerute 
+	apeland functiile implementate in DNSfct.c. Avem in primul rand functiile:
+	-int cmpkeys(void* a, void* b), care compara doua elemente de tipul TWeb dupa 
+	numele paginilor web;
+	-void elimweb(void* web), care elibereaza memoria alocata unui element de 
+	tipul TWeb.
+	
+	In main(), stocam parametrii din linia de comanda (numarul de bucket-uri, 
+	numele fisierelor de intrare si iesire) si apoi deschidem fisierele de 
+	intrare si iesire. Dupa aceasta citim din fisierul de intrare linie cu linie, 
+	executand comenzile corespunzatoare si scriind rezultatele lor in fisierul de 
+	iesire. In cazul in care o linie este goala	sarim peste ea. Eliberam memoria 
+	dupa aceea alocata vectorului in care am citit liniile din fisierul de 
+	intrare, distrugem apoi bucket-urile din hash si eliberam si memoria alocata 
+	pointerului la vectorul de liste. In final inchidem fiserele de intrarea si 
+	iesire.

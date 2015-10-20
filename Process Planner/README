@@ -1,0 +1,59 @@
+	In rezolvarea acestei teme am folosit pe langa fisierul principal main.c si 
+	fisierele cu implementarile functiilor folosite: stack.c, queue.c si 
+	functii.c. Antetele functiilor si structurile se gasesc in headerul procese.h.
+	Stivele si coada sunt implementate cu liste simplu inlantuite generice.
+
+
+	-----------------------------------stack.h----------------------------------
+	In acest fisier sunt implementate functiile de lucru cu stiva. Avem functiile:
+	- Push, pentru adaugarea de elemente la varful stivei;
+	- Pop, pentru extragerea de elemente din varful stivei;
+	- AfisS, pentru afisarea elementelor din stiva;
+	- DistrS, pentru eliberarea memoriei alocata unei stive.
+
+
+	-----------------------------------queue.h----------------------------------
+	In acest fisier sunt implementate functiile de lucru cu coada. Avem functiile:
+	- IntrQ, pentru introducerea ordonata de elemente in coada;
+	- ExtrQ, pentru extragerea de elemente de la inceputul cozii;
+	- AfisQ, pentru afisarea elementelor din coada;
+	- DistrQ, pentru eliberarea memoriei alocata unei cozi.
+
+
+	-----------------------------------functii.c--------------------------------
+	In acest fisier avem alte functii pe care le folosim in fisierul principal. 
+	Avem functiile:
+	- CmpProc, care compara doua elemente de tipul TProces, facand mai intai 
+	comparatia in functie de prioritate si apoi  in functie de timpul de pornire 
+	in executie;
+	- string_to_number, care transforma un sir de caractere in numar;
+	- ExtrElQ, care elimina un element din coada si returneaza informatia din 
+	acesta.
+
+
+	-------------------------------------main.c---------------------------------
+	Acesta este fisierul in care realizam toate operatiile, folosindu-ne de 
+	functiile descrise mai sus. Incepem prin a identifica numele fisierelor de 
+	intrare si de iesire, pe care le deschidem. Citim apoi numarul de evenimente 
+	si alocam memorie pentru stivele asociate evenimentelor. Dupa aceasta trecem 
+	la executarea comenzilor pe care le citim linie cu linie din fisierul de 
+	intrare. In variabila step retinem la al catulea pas ne aflam. In functie de 
+	primul cuvant din linia citita decidem ce fel de instructiune urmeaza sa 
+	executam, dupa care realizam parsarea restului de linie in functie tipul de 
+	instructiune.
+	In cazul in care instructiunea este "start", stim ca trebuie sa mai citim id-ul 
+	si prioritatea, pe care le introducem in campurile celulei ce apoi este 
+	legata la coada.
+	In cazul in care instructiunea este "wait", mai extragem evenimentul si 
+	id-ul, dupa care extragem elementul din coada si il introducem in stiva 
+	evenimentului corespunzator.
+	Daca instructiunea este "event", mai retinem evenimentul, dupa care golim 
+	stiva corespunzatoare acestuia, mutand toate elementele inapoi in coada.
+	Nu in ultimul rand, daca instructiunea este "end", mai citim id-ul, iar dupa 
+	aceea eliminam elementul cu acel id din coada.
+	La finalul unui pas afisam numarul pasului si elementele din coada de 
+	prioritati si din stivele nevide de evenimente (fiecare dintre acestea se va 
+	afisa avand indicele ei in fata).
+	Dupa executarea tuturor instructiunilor se elibereaza intreaga memorie ce 
+	inca mai era alocata, se inchid fisierele de intrare si de iesire si se 
+	sfarseste programul.

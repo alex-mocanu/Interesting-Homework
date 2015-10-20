@@ -1,0 +1,9 @@
+.PHONY = build clean
+SOURCES = main.c cluster.h blur.h crop.h structuri.h bmp_header.h
+
+build: main.c
+	gcc $(SOURCES) -o tema3
+
+clean:
+	rm -rf tema3
+

@@ -1,0 +1,103 @@
+	Un pixel de caracteristici de culoare R, G, B (red, green, blue) se numeste 
+valid daca pentru pixelii referinta (Rr, Gr, Br) si offset (Ro, Go, Bo) avem:
+- Rr - Ro <= R <= Rr + Ro
+- Gr - Go <= G <= Gr + Go
+- Br - Bo <= B <= Br + Bo
+
+	Matricea unui cluster este submatricea matricii de pixeli de dimensiuni 
+minime, care contine acel cluster.
+
+	Avem nevoie in primul rand nevoie de anumite structuri pe care le definim in 
+headerul structuri.h:
+1) pixel, in care retinem caracteristicile de culoare ale unui pixel;
+2) coord, in care retinem coordonatele unui pixel;
+3) cluster, in care retinem caracteristicile unui cluster: numarul de elemente 
+(nr_elem), indicele sau (al catelea bloc de pixeli valizi) (ind), coorodonatele 
+varfurilor stanga-jos, respectiv dreapta-sus (sj, ds).
+
+
+	In aceasta problema vom folosi cate o functie pentru fiecare dintre cerinte:
+1) dim_clus pentru prima cerinta, avand parametrii: fisierul in care scriem 
+(f), o matrice de pixeli (m), pixelii referinta si offset (ref, off), inaltimea 
+si latimea matricii (h, w), procentul din numarul de pixeli ai matricii imagine 
+dupa care distingem clusterele (P), o matrice sablon pentru identificarea 
+clusterelor (a), un vector de structuri de tip cluster (v), numarul de 
+clustere pe care urmeaza sa le identificam (nr);
+2) blur pentru a doua cerinta, avand parametrii: o matrice de pixeli (m), 
+inaltimea si latimea matricii (h, w), o structura de tip cluster (c), 
+numarul de clustere (nr), o matrice sablon in care sunt marcate clusterele 
+(m_c);
+3) crop pentru a treia cerinta, avand parametrii: o matrice de pixeli (m), o 
+structura de tip cluster (c), numarul de clustere (nr), un sir de caractere in 
+care retinem cuvantul "output.bmp" pentru construirea numelor imaginilor 
+clusterelor.
+
+
+	In main mai avem o functie, pix_read, cu ajutorul careia citim 
+caracteristicile de culoare ale unui pixel si alta functie, compare, folosita 
+la compararea clusterelor in functie de indicii lor.
+	Incepem prin a deschide fisierul din care citim caracteristicile pixelilor 
+referinta, offset si procentul pentru identificarea clusterelor. declaram toate 
+variabilele necesare si apoi citim continutul fisierului input.txt pe care 
+tocmai l-am deschis. Deschidem apoi fisierul in care vom scrie la prima cerinta 
+si fisierul imagine pe care il vom prelucra. Citim headerele fisier si 
+informatie ale imaginii si fixam in 0 campurile biXPelsPerMeter si 
+biYPelsPerMeter din headerul informatie. Atribuim dinamic memorie matricii de 
+pixeli, copiei acesteia, matricii sablon si vectorului de clustere. Citim acum 
+din fisierul imagine pixelii in matricea de pixeli, avand grija sa sarim peste 
+octetii de padding.
+
+	Pentru rezolvarea primei cerinte declaram o element de tip param_clus in care 
+pastram parametrii ce urmeaza sa-i dam functiei dim_clus (fisierul output.txt, 
+matricea de pixeli, pixelii referinta si offset, dimensiunile matricei de 
+pixeli, procentul, matricea sablon, vectorul de clustere si adresa variabilei 
+in care vom pastra numarul de clustere. Apelam acum functia dim_clus.
+In fisierul cluster.c avem implementata functia dim_clus, care foloseste si 
+alte doua functii: cautare, care cauta elemetele care apartin unui bloc de 
+pixeli valizi, si compar, care compara doua clustere in functie de numarul lor 
+de elemente. In functia dim_clus incepem prin a marca in matricea sablon 
+pixelii valizi prin 1 si restul pixelilor prin 0 (caci matricea sablon a primit 
+memorie prin calloc). Dupa aceasta parcurgem matricea sablon marcand fiecare 
+bloc cu cate un numar diferit (t, care se incrementeaza la trecerea la un bloc 
+nou).
+	Functia cautare primeste ca parametrii matricea sablon, dimensiunile ei, 
+coordonatele pixelului de la care incepem cautarea si indicele cu care vom 
+marca elementele blocului de pixeli valizi. Functia verifica mai intai daca 
+pixelul este marcat cu 1 in matricea sablon, iar in caz afirmativ il marcheaza 
+cu indicele dat ca parametru si continua sa verifice daca pixelii din jurul 
+acestuia sunt si ei valizi.
+	Dupa marcarea blocurilor pastram caracteristicile fiecarui intr-un vector de 
+tip cluster, b. Dupa asta sortam acest vector in functie de numarul de elemente 
+ale fiecarui bloc si identificam al catelea element din vectorul sortat contine 
+un cluster, urmatorii fiind si ei clustere. Pastram acum clusterele in vectorul 
+de clusteri dat ca parametru functiei si afisam in acelasi timp numarul de 
+elemente ale acestora.
+
+	La a doua cerinta pastram mai intai numele imaginii blurate in nFisOut. 
+Dupa aceasta apelam functia blur, dandu-i ca parametrii copia matricii de 
+pixeli, dimensiunile acesteia, vectorul de clustere, numarul de clustere si 
+matricea sablon.
+	In blur ne cream o matrice de pixeli, a, in care copiem mai intai matricea 
+copie, data ca parametru. Executam apoi de 100 de ori ciclul de blurare, care 
+consta in parcurgerea fiecarui cluster si inlocuirea valorii caracteristicilor 
+de culoare ale fiecarui element din cluster cu media aritmetica ale 
+caracteristicilor pixelilor vecini. Dupa fiecare ciclu in care modificam 
+matricea a, o copiem pe aceasta in matricea copie. La final eliberam memoria 
+din matricea a.
+	Dupa iesirea din functia blur generam imaginea blurata, scriind in fisierul 
+de output headerele fisier si imagine si apoi matricea imagine, adaugand dupa 
+fiecare linie din matrice paddingul adecvat.
+
+	La a treia cerinta incepem prin a sorta vectorul de clustere dupa indicele 
+fiecaruia, in ordine crescatoare, pentru ca vrem sa generam imaginile 
+clusterelor in ordinea in care le-am gasit pe acestea. Apelam pe urma functia 
+crop careia ii dam ca parametrii matricea de pixeli, vectorul de clustere, 
+numarul de clustere si sirul de caractere "output.bmp" care va fi folosit 
+pentru generarea numelor imaginilor.
+	In crop cream pentru fiecare cluster headerele informatie si fisier, dupa 
+care generam numele imaginii corespunzatoare. Deschidem pentru scriere fisierul 
+imagine corespunzator clusterului si scriem in acesta headerele, iar apoi 
+matricea de pixeli a clusterului, adaugand octetii de padding.
+
+	In finalul programului eliberam memoria alocata matricelor de pixeli si 
+copiei acesteia, matricei sablon si vectorului de clustere.

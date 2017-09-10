@@ -1,0 +1,1 @@
+Seq (Eq "a" (Value 0)) (Seq (Eq "b" (Value 1)) (Seq (Eq "n" (Value 20)) (Seq (Eq "i" (Value 2)) (Seq (While (Smaller (Symbol "i") (Add (Symbol "n") (Value 1))) (Seq (Eq "c" (Add (Symbol "a") (Symbol "b"))) (Seq (Eq "a" (Symbol "b")) (Seq (Eq "b" (Symbol "c")) (Eq "i" (Add (Symbol "i") (Value 1))))))) (Return (Symbol "b"))))))

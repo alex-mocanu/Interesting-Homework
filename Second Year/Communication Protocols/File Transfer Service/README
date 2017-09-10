@@ -1,0 +1,160 @@
+ Name: Mocanu Alexandru
+ Group: 321CB
+ Communication Protocols, Homework 2
+
+ The purpose of this homework is to create a client-server program in which 
+ clients can upload and download files to and from the server.
+
+ The program works as follows:
+ The server program is started. It first scans the configuration files, 
+ establishing the users and their passwords and shared files. It then receives 
+ connections from clients and responds to their requests. In the end, the 
+ server closes, announcing the clients, finishing all transfers and closing all 
+ connections.
+ The client program is started, moment at which a connection to the server is 
+ made. In order for any action, besides quit, to work the client has to log in 
+ with a username and password. If it fails to log in 3 times in a row, the 
+ connection is closed by the server. After login the client can do the 
+ following:
+ -logout
+ -request a list of the users on the server
+ -request a list of the files of a user (containing the name, dimension and the 
+ SHARED/PRIVATE status)
+ -upload a file on the server
+ -download a file from the server
+ -make a file's status SHARED
+ -make a file's status PRIVATE
+ -delete a file from the server
+ -quit
+
+ Information is sent in packets of 4096 bytes. The packets contain headers that 
+ begin with the name of the instruction and its parameters (like user or file).
+ The client's folders (not the ones from the server) are in the Users directory.
+ 
+ The server is implemented as follows:
+ It uses a User structure to store the users' passwords and shared files, 
+ read_fds and tmp_rds as the read file descriptor and its copy for the select 
+ function, fdmax for the maximum value of a file descriptor, serv_addr and 
+ cli_addr for the socket address structures of the server and the client, 
+ sockfd and newsockfd for the server's socket descriptor and the socket 
+ descriptors that are added, userTry as a map for counting the number of 
+ consecutive login tries of a client, userList to store the list of users on 
+ the server, buffer as a buffer, users as a mapping between usernames and their 
+ User structures, userBySocket as a mapping between socket descriptors and 
+ usernames, uploadFiles as a mapping between files that are uploaded and their 
+ file descriptors, downloadFiles as a mapping between files that are downloaded 
+ and their file descriptors, quitting as an indicator for the server's 
+ intention to quit, sockets for a list of sockets for communication with the 
+ clients.
+ It starts by checking the number of command-line arguments. It then clears the 
+ read_fds and tmp_fds structures. After that the scanning of the users_config 
+ and shared_files configuring files is made. At this stage the users map is 
+ being initialized. If a file from the shared_files file is not found, the file 
+ is ignored. After this comes the initialization of the server: a socket is 
+ opened, the binding is made and the server starts listening for connections. 
+ The server socket and the standard input descriptor are added to read_fds and 
+ the communication with the clients starts.
+ In a while(1) loop the communication is being done. The active sockets are 
+ marked by the select function. If the standard input is active, the server 
+ checks if the message is 'quit' the only valid command. If it is, the server 
+ blocks any commands, announces the clients of its intention and waits for the 
+ transfers to finish and the clients to deconnect before it actually quits.
+ Then comes the communication with the clients:
+ -If the server's socket is active a new connection is established.
+ -If a client closes the connection, its socket is closed and removed from 
+ read_fds and the socket descriptor is removed from the sockets list. If 
+ quitting is active the server is closed.
+ If the command is valid, first we identify the command (the arguments of a 
+ command are separeted by ':'):
+ -For login, we execute the login function and if a brute-force is detected, 
+ the connection with the client is closed. The login function identifies the 
+ username and the password and checks them to the database. If an error occurs, 
+ the client is announced. If the login is successful an "OK" message is sent, 
+ the number of tries is reseted and the username is set for the socket.
+ -For logout, the username is removed from userBySocket mapping.
+ -For getuserlist, a message with the userlist is sent to the client in as many 
+ packets as needed.
+ -For getfilelist, the existence of the user is checked. If the user doesn't 
+ exist an error message is sent. Otherwise, its directory is opened and a 
+ filelist is made, list which is then sent to the client.
+ -For upload, if a file with the same name as the one that should be uploaded 
+ is already present, an error message is sent to the client. Otherwise, a file 
+ for writing is opened, the file descriptor is added to uploadedFiles and an 
+ "OK" message is sent to the client.
+ -For up, we extract the data from the message and write it into the uploaded 
+ file. If the transfer is over, the file is closed and it is removed from 
+ uploadFiles. Else, a confirmation message is sent to the client.
+ -For download, we check if the user is in the database, if the requested file 
+ exists, if it is being uploaded and if it is shared, in case it belongs to a 
+ different user than the one making the request. If the download request is 
+ valid the file is opened for reading and a confirmation message is sent to the 
+ client.
+ -For down, a packet containing data from the downloaded file is sent to the 
+ client. If the transfer is over, the file is closed and removed from 
+ downloadedFiles.
+ -For share, the existence of the file is checked and after that its status. If 
+ the file exists and it is PRIVATE, its status is changed to SHARED and it is 
+ introduced in the list of shared files of the user. Otherwise an error message 
+ is sent to the client.
+ -For unshare, we have the same process as for share, with the exception that 
+ we remove the shared file from the list of the user, making it PRIVATE.
+ -For delete, the existence of the file is checked and then if it is in a 
+ transfer process. If the file exists and it is not being transfered, we delete 
+ it.
+ -For quit, we know that the client is quitting and we wait for it to close the 
+ connection in order to close the one from the server.
+
+ The client is implemented as follows:
+ It uses read_fds and tmp_fds as the read file descriptors and their copies, 
+ serv_addr as the server socket address structure, loggedIn as an indicator of 
+ whether a user is logged on the client or not, quitting as an indicator of the 
+ fact that the client is quitting or not, prompt as the prompt of the client, 
+ loggedUser as the name of the user that is logged on the client or "" if no 
+ user is logged, rec and snd as receive and send buffers, uploadFiles as a 
+ mapping between files and their file descriptors and downloadFiles as the 
+ mapping between file and their file descriptors.
+ We start by checking the number of command line arguments. Then we show the 
+ prompt. We open the log file and then we make the preparations for the 
+ connection: open socket, establish serv_addr structure and connect. Server's 
+ socket and standard input are added to read_fds.
+ We know start communicating with the server in the while(1) loop. We mark the 
+ active sockets with select(). We first treat the commands given from the 
+ standard input. At each command we first check if the user is logged in. We 
+ identify the command and we execute them as follows:
+ -For login, we send a login request to the server.
+ -For logout, we mark the user as not being logged in and we erase the username 
+ from logged user and we set the prompt to "$ ".
+ -For getuserlist, we send a getuserlist request to the server.
+ -For getfilelist, we send a getfilelist request to the server.
+ -For upload, we check if we have the file we want to upload and if it is not 
+ being downloaded. If both criteria are met we send an upload request to the 
+ server.
+ -For download, we check if a file with the same name is not already being 
+ downloaded. If it isn't we send a download request to the server.
+ -For share, we send a share request to the server.
+ -For unshare, we send an unshare request to the server.
+ -For delete, we send a delete request to the server.
+ -For quit, we block the command line and we set the quitting parameter. If 
+ there are no ungoing transfers we close the connection.
+ There are also responses from the server that have to be treated:
+ -For login, if login is successful we change the loggedIn status and the 
+ loggedUser indicator and also the prompt. If not, we print an error message 
+ and if brute-force was detected we close the connection.
+ -For getuserlist, we print the response of the server.
+ -For getfilelist, we print the response of the server.
+ -For upload, if the respons eis negative, we print the error message. 
+ Otherwise, we delimitate the responses in case there are more of them and we 
+ upload files as requested by each command. If we are done uploading a file we 
+ remove it from uploadFiles and we print a finishing message.
+ -For up, we use the up function which delimitates the up commands and sends 
+ packets like for upload.
+ -For download, if the response is negative we print an error message. 
+ Otherwise we open a file for writing, add it to downloadFiles and send a down 
+ request to the server.
+ -For down, we write data received from the server in the file and if we are 
+ done, we remove the file from downloadFiles and print a finishing message.
+ -For share, we print the message received from the server.
+ -For unshare, we print the message received from the server.
+ -For delete, we print the message received from the server.
+ -For quit, we know the server is quitting so we make the client quit, but only 
+ after all transfers are done.

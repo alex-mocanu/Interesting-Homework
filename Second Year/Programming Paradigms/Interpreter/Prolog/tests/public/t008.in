@@ -1,0 +1,56 @@
+a = 1;
+
+while(a < 10)
+{
+	b = 1;
+	
+	while(b < 3)
+	{
+		b = b + 1;		
+	}
+	
+	if(b) then
+	{
+		a = a + 15;
+	}
+	else
+	{
+		b = 4;
+	}
+	
+	if(10 < a) then
+	{
+		d = 0;
+		while (d < 5)
+		{
+			d = d + 1;
+			
+			if(d < 1) then
+			{
+				e = 0;
+				
+				while(e < 15)
+				{
+					if(e) then
+					{
+						x = e + 1;
+						x = x * e == 12 < 4;
+					}
+					else
+					{
+						x = 200000 + a;
+					}				
+				}
+			}
+			else
+			{
+				;
+			}
+		}	
+	}
+	else
+	{
+		;
+	}
+}
+

@@ -1,0 +1,79 @@
+  Nume: Mocanu Alexandru
+  Grupa: 331CB
+  Tema 2, Arhitectura Sistemelor de Calcul
+
+  1. Scop
+  Scopul temei este realizarea eficienta a calculului unei expresii matriciale:
+                        RES = alpha * A * B + beta * C,
+  dificultatea majora aparand in efectuarea operatiei de inmultire de matrice.
+
+
+  2. Implementare
+  Matricele pe care le folosim sunt mentinute in forma liniara si fiecare linie
+  poate fi accesata rapid prin intermediul unor vectori care retin adresele de
+  start ale liniilor (a, b, c).
+
+  Pentru rularea rapida trebuie avut grija intr-o prima faza la efectuarea
+  citirilor matricelor si a scrierii rezultatului.
+  Pentru a citi eficient matricele, efectuam un singur apel fread, citind toata
+  matricea deodata. Pentru a extrage datele realizam o parsare manuala a
+  acestora. In cazul matricelor A si C dupa parsarea unui numar facem si
+  inmultirea sa cu alpha, respectiv beta. Parametrul trans al functiilor de
+  citire specifica in ce forma dorim sa fie puse acestea dupa citire:
+  - 0, daca dorim ca matricele sa fie lasate in forma in care le-am citit;
+  - 1, daca dorim ca matricele sa fie puse in forma transpusa a celei citite.
+  Pentru ca iteratorii din for-uri sunt frecvent folositi, ii mentinem pe
+  acestia in registri. De asemenea, pentru a parcuge mai repede matricea in care
+  scriem datele, folosim un pointer (rA) pe care il deplasam pe masura datele
+  sunt introduse in matrice. Pointerul ra este folosit pentru initializarea
+  vectorului ce contine adresele de start ale liniilor matricei. Pointerii ra si
+  rA sunt si ei accesati suficient de des, incat merita si acestia sa fie
+  pastrati in registri.
+  Tot in ceea ce priveste citirea, matricea A va fi pastrata in forma
+  netranspusa, iar matricea B va fi pastrata in forma transpusa pentru a realiza
+  mai rapid inmultirea lor.
+
+  Pentru a scrie rapid datele, parcurgem matricea rezultat si generam un string,
+  reprezentand matricea, pe care il scriem dintr-un singur apel fwrite. Pastram
+  din nou iteratorii din for in registri si pointerul folosit la parcurgerea
+  matricei de asemenea.
+
+  Partea principala a algoritmului o reprezinta inmultirea matricelor. Pastram
+  iteratorii din for si pointerii folositi la parcurgerea matricelor A, B si C
+  in registrii, iar pe de asupra, folosim un registru si pentru pastrarea sumei
+  termenilor care compun un element din matricea A*B. Pentru ca suma termenilor
+  ce compun un element din A*B sa fie calculata cat mai repede, in cadrul
+  for-ului nu adunam cate un termen, ci cate 8 deodata (facem loop unrolling).
+  In urma acestei proceduri si a faptului ca inmultirea are loc intre o matrice
+  netranspusa si una transpusa (liniile de cache fiind folosite in mod eficient,
+  spre deosebire de cazul inmultirii naive, in care elementele matricei B ar fi
+  fost in continuu introduse si extrase din cache), obtinem un timp de rulare
+  suficient de bun.
+
+
+  3. Grafice
+  Graficele ilustreaza timpul de rulare pentru diverse versiuni ale programului,
+  de la cea mai ineficienta versiune, pana la cea mai eficienta dintre ele dupa
+  cum urmeaza (optimizarea de la pasul k se gaseste si la pasul (k+1)):
+  1 - inmultire naiva
+  2 - transpunerea celei de-a doua matrice din inmultire
+  3 - folosirea de pointeri pentru parcurgerea matricelor
+  4 - pastrarea iteratorilor din for in registri
+  5 - pastrarea pointerilor pentru parcurgerea matricelor in registri
+  6 - loop unrolling
+
+  Observam ca pastrarea iteratorilor din for in registri devine utila abia la
+  testele 3 si 4, dar la testul 4 are o pondere semnificativa, motivandu-se
+  includerea sa.
+
+
+  4. Concluzii
+  In concluzie, eficienta programului rezulta din cateva elemente:
+  - folosirea registrilor in cazurile in care anumite variabile sunt accesate si
+  modificate in mod repetat;
+  - parcurgerea matricelor folosind pointeri, care sunt incrementati pentru
+  avansarea pozitiei;
+  - inmultirea matricelor A si B cu A netranspusa si B transpusa, care duce la
+  inmultiri linie cu linie, accesul la memorie in ambele matrice fiind unul
+  liniar, permitand astfel pastrarea in linii de cache ale elementelor;
+  - loop unrolling realizat la calcularea unui element din matricea A*B.

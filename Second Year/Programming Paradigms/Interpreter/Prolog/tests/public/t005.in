@@ -1,0 +1,18 @@
+x = 2;
+y = 2 + 4 * x;
+
+while(x < y)
+{
+	x = x + 2;
+	
+	if (y < x) then
+	{
+		x = x + 1;
+	}
+	else
+	{
+		y = y + 1;
+	}	
+}
+
+return x;

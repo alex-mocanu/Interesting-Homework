@@ -1,0 +1,1 @@
+Seq (Eq "z" (Value 0)) (Seq (While (Smaller (Symbol "z") (Value 3)) (Seq (Eq "x" (Add (Symbol "x") (Symbol "z"))) (Eq "z" (Add (Symbol "z") (Value 1))))) (Return (Symbol "z")))

@@ -1,0 +1,1 @@
+Seq (Eq "x" (Value 4)) (If (Smaller (Symbol "x") (Value 0)) (Return (Symbol "x")) (Return (Add (Symbol "x") (Value 1))))

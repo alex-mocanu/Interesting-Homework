@@ -1,0 +1,66 @@
+  Name: Mocanu Alexandru
+  Group: 331CB
+  Parallel and Distributed Algorithms - Homework 3
+
+  The first thing we do is distinguish between three categories of nodes:
+  - the root
+  - the inside nodes
+  - the leaves
+  Each category of nodes executes a specific set of instructions.
+  Each node has the following elements:
+  - an array of neighbours and their number
+  - a parent, an array of children and their number
+  - an array of positions for the children in the children array
+  - an array of the indices of the first and last line distributed to a child
+  for processing
+  - the number of leaves in the node's subtree
+  - the width and the height of the image
+  - an image matrix
+  - number of lines to send to a child
+  - number of lines processed (non-zero only for leaves)
+
+  We first parse the command-line arguments to find the topology, image and
+  statistics files and we open these files for reading/writing. We then allocate
+  memory for the neighbours, children and indices arrays.
+  All the nodes read the topology file and, according to their rank, they
+  determine their neighbours using the "determineNeighbours" function.
+
+  1. To determine the topology we do the following:
+  The root's neighbours are all its children. The root sends a message with the
+  "0" tag to all its children. The other nodes set the parent to the value of
+  the neighbour node that first sends a message with "0" tag. They send the "0"
+  tag message to the rest of the neighbours. After this the node waits to other
+  messages. When a "1" tag message is received we add that neighbour to the
+  children list. If a node has no children it is a leaf and we set the number of
+  leaves in its subtree to 1. After this a node sends a "1" tag message to its
+  parent. If two nodes close a cycle they will send a "0" tag message one to the
+  other and just ignore themselves afterwards. "1" tag messages contain the
+  number of leaves in the node's subtree.
+
+  2.The image processing comes next:
+  The root node reads how many images there are to process and then begins
+  processing each one of them as follows. The filter type, input and output
+  image names are parsed. The image is read from file using the "readImage"
+  function. The root then determines how to distribute the lines to the children
+  and sends the children first a "0" tag message in which it lets them know how
+  many useful lines there will be and afterwards it sends each line one by one
+  with the tag according to the filter (1 for smooth, 2 for blur, 3 for sharpen
+  and 4 for mean_removal) along with an upper and lower border (upper and lower
+  lines in the actual image). The inside nodes receive the lines and send them
+  forward to the their children. The leaves add the number of lines to the
+  number of lines processed and then process them with the "processImage"
+  function. The leaves send the processed lines to their parents with a "5" tag
+  message. The inside nodes assemble the lines received according to the indices
+  array (that described which lines were attributed to which child) and then
+  them to their parents. The root assembles all the lines and then print them to
+  the output image.
+  This procedure is applied to each image.
+
+  3. In the end the statistics phase is executed as follows:
+  The root sends a "6" tag message to its children and the message is propagated
+  to the leaves. The leaves send a "7" message tag in the form of an integer
+  that contains the leaf index on the first 16 bits and the number of lines
+  processed on the last 16 bits. Each inside node waits for nrLeaves messages,
+  each message being sent to the parent immediately after being received. The
+  root waits for nrLeaves messages and in the end prints the results to the
+  statistics file.

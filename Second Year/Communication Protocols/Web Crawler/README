@@ -1,0 +1,72 @@
+ Nume: Mocanu Alexandru
+ Grupa: 321CB
+ Tema 3 Protocoale de Comunicatie
+
+ Pentru acest program avem de implementat doua entitati: un server si un client.
+ Serverul este cel care primeste comenzi de la utilizator, iar clientii sunt 
+ cei care executa downloadul de fisiere, trimitand continutul serverului.
+ Voi descrie in continuare implementarea serverului si a clientului.
+
+
+ 								--Serverul--
+ Se realizeaza la inceput parsarea argumentelor primite in linia de comanda. 
+ Astfel, fara optiunea -r am fi tinut in variabila 'recursive' valoarea "1", 
+ iar cu optiunea -r valoarea "5", activand optiunea -e trecem varaiabila 
+ 'everything' de la "0" la "1", iar activand optiunea -o deschidem fisiere de 
+ logging pentru iesirea standard si pentru iesirea de eroare. Dupa aceasta 
+ deschidem un socket, pregatim structura socketului, facem bind si listen si ne 
+ pregatim descriptorii de read (adaugand la aceasta multime socketul pe care se 
+ vor realiza conexiunile cu clientii si descriptorul intrarii standard) pentru 
+ multiplexare. Incepem apoi procesul de comunicare cu clientii. Apelam select 
+ pentru a marca socketii activi. Tratam la inceput cazul de conectare a unui 
+ client prin apelarea functiei accept. In caz de eroare trecem mai departe. La 
+ fiecare noua conectiune mai adaugam o intrare in fisierul de logging si mai 
+ adaugam un client la lista de clienti conectati. In cazul unei comenzi din 
+ linie de comanda avem trei cazuri. In cazul in care se cere statusul 
+ serverului se afiseaza o lista cu clientii conectati, la fiecare semnaland 
+ adresa si portul. In cazul comenzii 'exit' se transmite acest mesaj clientilor 
+ si apoi se incheie programul. Daca avem o comanda invalida, afisam un mesaj 
+ sugestiv in acest sens. Daca se da comanda 'download' apelam functia cu 
+ acelasi nume pentru executarea acestui proces in cazul in care avem cel putin 
+ 5 clienti conectati, altfel retinem in variabila 'needToDownload' ca avem de 
+ executat un download si il executam cand s-au conectat 5 clienti.
+ In cadrul functiei de download asignam mai intai taskul de download initial 
+ unui client. Dupa aceea incepem procesul propriu-zis. Tratam mai intai cazul 
+ in care nu mai avem clienti activi si nici taskuri de executat, caz in care 
+ notificam clientii ca am terminat si incheiem programul.
+ Apoi, ne ocupam de asignarea de taskuri clientilor liberi. In aceasta etapa 
+ trimitem taskuri clientilor, incrementam contorul de clienti activi si scoatem 
+ clientii din coada de clienti liberi. Un mesaj cu task are formatul:
+ 	'download' nivel_de_recursivitate optiune_everything website
+ Abia acum urmeaza multiplexarea prin care alegem de la ce clienti sa primim 
+ pachete. Tratam la inceput cazul de conectare a unor noi clienti. Dupa aceea 
+ ne ocupam de cazul in care de la clienti vin mesaje. Exista doua tipuri de 
+ mesaje principale, fiecare avand cate un header, si un mesaj auxiliar:
+ -mesajul 'data' cu urmatoarele campuri:
+ 					'data' fisier dimensiune_date date
+ -mesajul 'link' cu urmatoarele campuri:
+ 				'link' nivel_de_recusivitate denumire_link
+ In fiecare caz facem parsarea extragand continutul, in cazul mesajului 'data' 
+ scriindu-l pe acesta intr-un fisier, iar in cazul mesajului 'link' adaugandu-l 
+ la lista de taskuri. Cand un mesaj de tip data cu semnatura 'OVER' ajunge la 
+ server inseamna ca s-a terminat de transferat un fisier si de aceea inchidem 
+ fisierul in care s-a facut scrierea si il eliminam din mapul de fisiere si 
+ pointerii catre ele. Mesajul auxiliar este 'finished' care specifica faptul ca 
+ un client si-a terminat taskul si in acesta caz se poate decrementa contorul 
+ de clienti activi si se poate adauga clientul la lista de clienti liberi.
+
+
+ 								--Clientul--
+ Clientul stabileste mai intai conexiunea cu serverul, iar apoi executa comanda 
+ primita de la acesta. Daca comanda este 'exit' clientul se inchide. Daca 
+ comanda este download se apeleaza functia cu acelasi nume pentru realizarea 
+ operatiunii. In aceasta functie incepem prin a decrementa nivelul de 
+ recursivitate. Realizam apoi conexiunea la serverul web si ii trimitem 
+ acestuia un mesaj GET pentru obtinerea paginii pe care o trimitem mai departe 
+ serverului folosind formatul descris mai sus. In cazul in care recursivitatea 
+ nu a ajuns la 0 cautam linkurile de forma <a ... href="..." ...>, care contin 
+ directionari catre pagini de pe acelasi site. Daca optiunea 'everything' este 
+ activa selectam nu doar linkurile 'html' si 'htm' ci si fisierele cu extensie 
+ de lungime 3 si 4. Aceste linkuri sunt trimise serverului pentru a fi adaugate 
+ la lista de taskuri. La finalul functiei download trimitem serverului mesajul 
+ 'finished' pentru al atentiona de finalizarea taskului.

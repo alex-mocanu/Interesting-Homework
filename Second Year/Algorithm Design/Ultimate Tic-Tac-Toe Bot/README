@@ -1,0 +1,111 @@
+  Team name:	CBTheNulls
+  Group:		321CB
+  Members:		Mocanu Alexandru (captain)
+  				Budoiu Alin-Stefan
+  				Patularu Ioana-Irina
+  				Pipis Raul-Alex
+
+  The bot of our team is implemented using the alpha-beta pruning algorithm.
+  The big and small cells are numbered in the manner:
+
+		  					0		1		2
+
+
+		  					3		4		5
+
+
+		  					6		7		8
+
+  In order to implement the bot we used the following:
+
+  A structure State, that contains:
+  - t, a list of the small cells of the board
+  - bigBoard, a list of the big cells of the board
+  - nextMove, the next move to be done from this state
+  - State(t), the constructor that initializes the t field and sets the 
+  bigBoard size to 9
+  - evaluateStateMe(my_id), that evalutes the state of the board when my bot 
+  has to move
+
+  Several functions:
+
+  								--cell(i, j)--
+  A function that returns the j-th small cell from the i-th big cell.
+
+  						--decisiveMove(s, square, my_id)--
+  This functions receives a state, s, a big square, square, and the id of the 
+  player that has to make the move. It checks if the player can win on his 
+  current move by taking square. To do so, we first check if we could win if we 
+  take square and, if we can, we check if we can win square.
+
+  							--ableToBeWon(v, his_id)--
+  The function receives a square in the form of list v and also receives the id 
+  of the opponent. It then checks if we can still win that square. We could 
+  still win the square if there were at least one row/column/diagonal that 
+  didn't contain a cell marked with his_id.
+
+  							--winnable(v, my_id)--
+  The functions receives a square, represented by the list v, and the my id. It 
+  then counts the number of rows, columns and diagonals that have to cells 
+  marked with my_id and none with the opponent's id, so the ready to be won 
+  lines.
+  The values returned by this function are kept in an unordered map to avoid 
+  calculating them again.
+
+  							--winnableBig(s, my_id)--
+  The function receives the current state of the board and my id. It calculates 
+  a score of the board. It first establishes the squares that could be won. The 
+  score is calculated as follows:
+  - for the lines that contain two squares marked with my_id and onethat can be 
+  won, there are 3 points
+  - for the lines that contain one square marked with my_id and two that can be 
+  won, there are 2 points
+  - for the lines that contain three squares that can be won, there is 1 point
+
+  								--won(table)--
+  The function receives a square represented as a list, table. It decides 
+  whether the square was won by either player, case in which it returns the id 
+  of the player. If the square is still not complete or it's a draw, it returns 
+  0.
+
+  								--cells(s)--
+  The function receives a state and returns the cells in which we can make a 
+  move. It looks after the big squares marked with -1 and then adds the small 
+  cells from those squares in the list.
+
+  							--isFree(s, square)--
+  The function receives a state and a big square. The square has to be marked 
+  with 0. The function checks if the square is still incomplete.
+
+  							--setMacro(s, move)--
+  The function receives a state and the square in which a move was just made. 
+  It sets the adequate values for the bigBoard.
+
+  		--alphaBeta(state, depth, alpha, beta, my_id, maxPlayer)--
+  The function that implements the alpha-beta pruning algortihm. It receives a 
+  state, the depth in the alpha-beta tree, the alpha and beta values, the id of 
+  our bot and the maxPlayer boolean value which tells the function which player 
+  moves (MAX if true, MIN if false). It first checks if any player won. It then 
+  checks if we reached 0 depth, in which case we return the value of the state. 
+  Then, if we were in none of the cases above, we apply the alpha-beta 
+  algorithm.
+
+  The essential function behind the algorithm is, of course, evaluateStateMe.
+  It calculates the value of the state when our bot has to make a move. It 
+  makes a list of available big squares (-1 marked). If there is only one 
+  available square, we first check if we can make a decisive move, in which 
+  case the function returns INF. If not, it calculates a priority which 
+  includes the factors: 
+  - big lines that are about to be won by our bot and the other bot
+  (+1000*winnableBig for our bot, -1000*winnableBig for the other)
+  - squares that are about to be won (+100*winnable for our bot, -100*winnable 
+  for the other)
+  - squares that have more marks of one player or the other (+10 for ours, -10 
+  for the other)
+  If we have more than one square available, it checks each one for a decisive 
+  move. If no decisive move is found it just calculates a priority.
+
+
+  There is also a function in the BotIO class that we added, namely myMove().
+  It first checks if a decisive move can be made without applying alphaBeta. If 
+  not, it applies alphaBeta with a depth of 6.

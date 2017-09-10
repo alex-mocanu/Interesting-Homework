@@ -1,0 +1,135 @@
+	Name: Mocanu Alexandru
+	Group: 321CB
+	Homework 2, Object Oriented Programming
+
+	Classes:
+	Nod, Expresie, Termen, Factor, Ternar, Main
+
+	-------------------------------------Nod-------------------------------------
+	This class contains the common features of the expression tree's nodes. The 
+	variable fields are:
+	-int level - the level on which the node is situated in the tree
+	-char name - the type of the node, namely Expresie, Termen, Factor or Ternar
+	-String val - the string that is stored in the node, representing an 
+	operator, a variable's name or a constant
+	-Nod[] children - the children of the node, the left child and the right child
+	After the variable declarations we have a single construct and a set of 
+	getters and setters for each of the variables described above. Next on come 
+	the methods:
+
+	                                  --symbol--
+	This is an auxiliary method used to decide if a character is an operator or 
+	parenthesis, in which case the function returns true, or some other character.
+
+	                                 --postfix--
+	This method receives a string representing an infix notation expression and 
+	transforms it into a Reverse Polish notation. We first take the string and 
+	transform it into a char array to make it more natural to parse. In order to 
+	make the transformation we use a stack and we store the Reverse Polish 
+	notation in a queue. We also use a string buffer in order to construct 
+	variable's names and constants.
+	In the parsing process we start by deciding if the current character is a 
+	symbol. If it isn't, then it is part of a variable or constant and, before we 
+	continue to construct it, we check if it has a sign by looking at the 
+	previous position, if there is one, and, if it is the case, at two positions 
+	back to see if there was a parenthesis. If the character is a symbol, then we 
+	have the following cases:
+	-'(' - we push the symbol onto the stack
+	-')' - we pop symbols from the stack and into the queue until we reach '('. 
+	When we reach '(', we just remove it from the stack and then stop.
+	-'+' or '-' - we check if the symbol is the sign of some constant or variable 
+	by looking at the previous position, if there is one. If this is the case, we 
+	continue without doing anything. Otherwise, we remove elements from the stack 
+	and push them into the queue until we reach '(' or the stack is empty and 
+	then we push the symbol in the stack.
+	-'*' - we remove elements from the stack and push them into the queue while 
+	there is another '*' in the stack and then we push the symbol in the stack
+	-'>' or '?' - we push the element in the stack
+	-':' - we pop one element from the stack and push it into the queue and then 
+	we push the symbol in the stack
+	At the end of these procedures we pop the elements remaining from the stack 
+	and we push them into the queue. In the end we return the queue.
+
+
+	----------------------------------Expresii-----------------------------------
+	This class extends the Nod class. It implements methods for creating the 
+	expression tree and evaluating an expression.
+
+	                               --createTree--
+	This method takes a Reverse Polish notation as a parameter and creates the 
+	tree structure from it. In order to do this we use a stack of nodes. We go 
+	through the Reverse Polish notation. If the element is a varible or a 
+	constant, we simply push it in the stack. If it is an operator, we create a 
+	node containing the operator, pop the previous two nodes and add them as 
+	children to the freshly created node and we push it in the stack. In the end, 
+	we return the root of the node (the only remaining node in the stack).
+
+	                                --evalTree--
+	Like the name suggests, the method is used to evaluate an expression taking a 
+	node and a hash of variables with their values as parameters. If the node is 
+	not an operator, we just return the value contained in it. Otherwise we find 
+	the result recursively by evaluating the "children" expressions and applying 
+	the corresponding operator to them.
+
+
+	-----------------------------------Termeni-----------------------------------
+	This class extends the Nod class and just contains constructors.
+
+
+	-----------------------------------Factori-----------------------------------
+	This class extends the Nod class and just contains constructors.
+
+
+	------------------------------------Ternar-----------------------------------
+	This class extends the Nod class and just contains constructors.	
+
+
+	-------------------------------------Main------------------------------------
+	The Main class is used to perform all the tasks: construct the expression 
+	tree, determine semantic errors and evaluate expressions. There are also four 
+	auxiliary methods:
+	
+	                                  --number--
+	This method determines if a character is a digit.
+
+	                            --paranthesisOperator--
+	This method decides if parenthesis are needed when writing the expression. We 
+	don't need parenthesis for binding terms between which we have '*' and '?'.
+
+	                                   --dfs--
+	We use this function to change the types of the leafs (which are Expresii 
+	nodes by default) by performing a depth first search. When we reach a node 
+	whose child/children is/are a leaf/leaves we transoform the child/children in 
+	a node/nodes of the suitable type (T for '+' and '-' parent, F for '*' parent 
+	and N for '?', ':' and '>' parent).
+
+	                                   --bfs--
+	This method is used to print the tree structure level by level through a 
+	breath first search. We start with an E root and we expand the E nodes 
+	accordingly when we move down level by level. We use the paranthesisOperator 
+	method to decide when to print parenthesis.
+
+	We finally get to the main method. We open the input file given as a 
+	command-line parameter and the three output files. We declare the tree and 
+	the hash of variables with their values and then we start reading the 
+	expressions. We perform the same procedures for each expression:
+	-We create the expression tree by splitting the expression by the '=' sign and 
+	constructing each subtree with createTree(). We then set the leaves' types 
+	with dfs() and we print the tree structure with bfs(), leaving a blank line 
+	between the trees in order to make them easier to read.
+	-To determine semantic errors we first check if the left-hand side is a 
+	Termen node and that it doesn't start with a digit or an operator. If it does 
+	we print the proper error message. If such an error does not occur we then 
+	check the right hand side to see if all the variables that appear are in the 
+	hash. If we find a variable that is not in the hash, we print the error 
+	message. Otherwise, we print "Ok!".
+	-To evaluate the expression we first need it to be valid, so during the 
+	semantic analysis we print "error" if there is any problem. If not, we use 
+	evalTree() to find the result of the expression, store it in the hash and 
+	print it.
+	We finish the main method by closing the files.
+
+
+	P.S. The way or running "make run" is:
+	
+				make run ARG=imput_file

@@ -1,0 +1,1 @@
+While (Smaller (Symbol "z") (Value 4)) (Eq "z" (Add (Symbol "z") (Value 1)))

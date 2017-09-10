@@ -1,0 +1,4 @@
+t009 -> "if" fara "then" (si fara "else")
+t010 -> valoarea variabilei "c" este utilizata fara a fi definita anterior
+t011 -> cuvintele cheie nu pot fi folosite pe post de variabile
+t012 -> numele unei variabile poate contine doar litere

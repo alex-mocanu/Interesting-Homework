@@ -1,0 +1,14 @@
+a = 10;
+b = 5;
+
+if (b < a) then {
+    b = a + 1;
+} else {
+    return b;
+}
+
+if (a > b) then {
+    a = b + 1;
+} else {
+    return a;
+}

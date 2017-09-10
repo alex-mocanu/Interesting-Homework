@@ -1,0 +1,13 @@
+a = 15;
+b = 25;
+
+while (0 < b) {
+    if (b < a) then {
+        a = a - b
+    } else {
+        b = b - a;
+    }
+}
+
+c = a;
+return c;

@@ -1,0 +1,7 @@
+who = 1;
+where = who * 2;
+what = where + 3;
+if = what - 2;
+eh = if + 99;
+
+return eh;

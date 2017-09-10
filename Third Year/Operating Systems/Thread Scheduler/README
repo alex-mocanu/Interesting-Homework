@@ -1,0 +1,94 @@
+  Nume: Mocanu Alexandru
+  Grupa: 331CB
+  Tema 4, Sisteme de Operare
+
+  I. Introducere
+  Scopul temei este implemetarea unui planificator de threaduri.
+
+
+  II. Functii principale
+  Pentru realizarea acestuia, sunt expuse sase functii:
+  1. so_init - realizeaza initializarea structurilor si variabileleor necesare
+  pentru simulare.
+  2. so_fork - realizeaza crearea unui nou thread, avand date handlerul rutinei
+  ce va fi executata si prioritatea threadului. Threadul nou creat este pus in
+  starea running daca nu exista un proces care sa ruleze sau daca are prioritate
+  mai mare decat procesul care ruleaza. Altfel, este pus in starea ready si se
+  verifica daca threadul curent trebuie preemptat.
+  3. so_wait - trece threadul care o ruleaza in coada de wait asociata
+  evenimentului de IO transmis ca parametru. Inainte de a fi trecut in starea
+  waiting, este pus pe procesor un alt thread.
+  4. so_signal - trece threadurile care asteapta dupa evenimentul de IO dat ca
+  parametru fie in cozile de ready, fie in starea running, in cazul threadului
+  cu prioritatea cea mai mare dintre ele, daca acesta are prioritate mai mare
+  decat threadul care ruleaza la acel moment. Daca nu exista un thread de
+  prioritate mai mare care sa treaca pe procesor, se verifica daca threadul
+  curent treuie preemptat.
+  5. so_exec - face doar incrementarea ceasului si verificarea nevoii de
+  preemptare.
+  6. so_exit - elibereaza toate resursele sistemului.
+
+
+  III. Resurse auxiliare
+  Avem urmatoarele fisiere auxiliare (pe langa so_scheduler):
+  * queue.h, queue.c:
+  Pentru mentinerea threadurilor in cozi de wait si ready, avem implementata o
+  coada ca lista circulara dublu inlantuita. Aceasta permite atat
+  operatii de push si pop, cat si de push_front, pentru a reintroduce o valoare
+  inapoi in capul cozii, daca acesta s-a dovedit a fi inutilizabil dupa
+  extragerea sa.
+
+  * utils.h, utils.c
+  Pentru sincronizare avem nevoie de o bariera. Aceasta este implementata
+  folosind un prag (pentru numarul de threaduri care trebuie sa o acceseze
+  pentru a o debloca), un mutex (pentru modificarea in siguranta a contorului)
+  si o variabila conditie (pentru blocarea threadurilor in asteptarea
+  semnalizarii acesteia).
+
+  Un thread este reprezentat printr-o structura care retine thread id-ul,
+  prioritatea sa si o variabila conditie asociata, dupa care acesta asteapta
+  pentru a intra pe procesor.
+
+  Folosim de asemenea o structura asemanatoare (care in loc de thread id
+  prezinta un handler de functie) pentru transmiterea parametrilor la crearea
+  unui thread cu pthread_create. Aceasta structura se numeste intuitiv
+  "thread_params".
+
+  Avem nevoie de urmatoarele structuri si variabile:
+  - threads - o coada cu threadurile create
+  - ready - cozi cu threadurile impartite dupa prioritate
+  - waiting - cozi cu threadurile impartite dupa evenimentul la care asteapta
+  - running - threadul care ruleaza pe procesor la momentul curent
+  - tim - timpul petrecut de threadul running pe procesor de la ultima intrare
+  a sa
+  - time_quantum - cuanta de timp permisa pentru fiecare thread
+  - io_events - numarul de evenimente de io disponibile
+  - mutex - mutexul folosit pentru sincronizarea apelurilor de wait si signal
+  asupra variabilelor conditie
+
+  Functiile ajutatoare folosite sunt:
+  - reset_time - seteaza "tim" la 0
+  - tick - incrementeaza "tim"
+  - preempt - testeaza daca cuanta de timp a threadului care a apelat aceasta
+  functie a expirat. Daca da, acest thread trebuie preemptat. Pentru aceasta se
+  gaseste urmatorul thread care ar trebui sa ruleze pe procesor. Daca acelasi
+  thread va ramane pe procesor, doar apelat "reset_time". Daca alt thread
+  trebuie adus pe procesor, acestuia i se transimte un semnal si este retinut
+  in "running", iar threadul care rula pana atunci este pus in coada ready si
+  este pus in asteptare. Se apeleaza si in acest caz "reset_time".
+  - start_thread - este folosita pentru rularea unei rutine de catre un thread.
+  Pentru inceput threadul asteapta sa fie planificat pe procesor. Se foloseste o
+  bariera pentru a ne asigura ca threadul apuca sa intre in starea de asteptare
+  inainte de a fi semnalizat. Dupa ce este admis pe procesor se ruleaza rutina,
+  iar la final threadul cedeaza procesorul.
+  - thread_to_run - inspecteaza cozile ready si alege urmatorul thread ce ar
+  trebui sa fie rulat pe procesor.
+  - barrier_init - initializeaza elementele unei bariere: prag, mutex, variabila
+  conditie.
+  - barrier_destroy - elibereaza resursele ocupate de bariera.
+  - barrier_wait - blocheaza threadurile la bariera pana la atingerea pragului,
+  moment in care contorul este pus pe 0 si threadurile care asteptau sunt
+  deblocate.
+
+  * error_codes.h
+  Contine coduri de eroare pentru diverse scenarii.

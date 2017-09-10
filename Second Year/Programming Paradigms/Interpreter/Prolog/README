@@ -1,0 +1,64 @@
+ Nume: Mocanu Alexandru
+ Grupa: 321CB
+ Tema 3 Paradigme de programare
+
+ Scopul acestei teme este realizarea unui interpretor in Prolog a unui limbaj 
+ numit IMP. Un astfel de program trebuie sa returneze o valoare, in caz contrar 
+ fiind ori sintactic gresit, caz in care se returneaza 'x', pentru program fara 
+ return, sau 'e', in celelate situatii, ori semantic gresit, caz in care se 
+ returneaza 'e'.
+ Pentru realizarea acestui program folosim un schelet de cod care genereaza 
+ programul scris sub forma de termeni ai sai (variabile, constante, operatori, 
+ nume de instructiuni, paranteze, acolade si ;) pe care urmeaza sa le parsam.
+ Pentru rularea programului avem nevoie de o suita de predicate:
+
+ 							--parseExpr(L, R, Rest)--
+ Acest predicat are ca termeni programul ce trebuie parsat, L, urmatoarea 
+ expresie ce trebuie evaluata (ce se gaseste pana la urmatorul ';', respectiv 
+ ')'), R, impreuna cu restul programului ce trebuie parsat, Rest. In urma 
+ apelarii acestui predicat obtinem o expresie pe care mai apoi o evaluam.
+
+ 						--parseProg(L, R, Rest, Cnt)--
+ Acest predicat are ca termeni programul ce trebuie parsat, L, numarul de 
+ acolade deschise si neinchise pana la momentul curent al parsarii programului, 
+ Cnt, blocul de program ce urmeaza a fi rulat, R, respectiv restul programului 
+ ce va fi parsat, Rest. In urma apelarii acestui predicat obtinem un bloc de 
+ program pe care mai apoi il vom rula.
+
+ 							--value(Var, L, R)--
+ Acest predicat primeste o constanta sau o variabila, Var, o lista de variabile 
+ cu valorile lor, L, si rezultatul evaluarii, R. Astfel dandu-se o variabila, 
+ in R vom obtine valoarea ei, extrasa din L, respectiv dandu-se o constanta, 
+ vom pune constanta direct in R.
+
+ 					--evalExpr(L, S1, S2, P, Vars, R)--
+ Acest predicat primeste ca termeni o expresie ce trebuie evaluata, L, doua 
+ stive, S1 si S2, o lista P folosita pentru pastrarea formei postfixate a unei 
+ expresii, o lista de variabile si valorile lor, Vars, si rezultatul R. 
+ Folosind acest predicat evaluam expresia L, aducand-o mai intai la forma 
+ postfixata (stocata in P) cu ajutorul stivei S1. Evaluarea expresiei 
+ postfixate se realizeaza cu ajutorul stivei S2, dupa ce P este inversat (forma 
+ obtinuta in algoritmul de transformare din forma infix in forma postfix 
+ genereaza inversul formei postfix). In cadrul generarii formei postfix trebuie 
+ avut grija la precedenta operatorilor, predicatele corespunzatoare fiecaruia 
+ fiind scrise pe rand de la operatorul cu cea mai mare precedenta, *, la 
+ operatorul cu cea mai mica precedenta, ==.
+
+ 					--parseVars(L, Vars, VarAux, R)--
+ Acest predicat primeste ca termeni programul ce trebuie executat, L, o lista 
+ de variabile si valorile lor, Vars, o lista auxiliara de variabile, VarAux, si 
+ rezultatul, R. Cu acest predicat realizam rularea programului, fiind trate 
+ toate tipurile de programe: program fara instructiune de return, program ;, 
+ program de return, program If, program While si program de atribuire. In 
+ cadrul programelor If si While se vede utilitatea folosirii listei auxiliare 
+ VarAux. La intrarea intr-un astfel de bloc avem o lista de variabile care se 
+ poate modifica in cadrul blocului. Daca modificam direct lista Vars, la 
+ intoarcerea din blocul de program modificarile nu vor fi pastrate. Asadar avem 
+ nevoie de acea lista VarAux. In cazul in care intampinam vreo eroare ]
+ sintactica sau semnatica, vom intoarce 'e', respectiv 'x' pentru cazul in care 
+ programul nu se incheie cu un return.
+
+ 							--parseInputAux(L, R)--
+ Acest predicat primeste programul ce trebuie rulat, L, si rezultatul sau, R. 
+ Folosim predicatul parseVars cu parametrii L, [], [] si R, pentru implementare 
+ acestui predicat.

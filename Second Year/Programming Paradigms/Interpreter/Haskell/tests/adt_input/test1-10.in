@@ -1,0 +1,1 @@
+Seq (Eq "y" (Mult (Value 1) (Value 2))) (Seq (Eq "x" (Add (Value 4) (Symbol "y"))) (If (Equal (Symbol "y") (Value 2)) (Seq (Eq "z" (Value 0)) (Seq (While (Smaller (Symbol "z") (Value 3)) (Seq (Eq "x" (Add (Symbol "x") (Value 1))) (Seq (Eq "y" (Add (Symbol "x") (Value 2))) (Eq "z" (Add (Symbol "z") (Value 1)))))) (Return (Symbol "y")))) (Return (Add (Symbol "x") (Symbol "y")))))

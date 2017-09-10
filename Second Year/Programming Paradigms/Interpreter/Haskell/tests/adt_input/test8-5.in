@@ -1,0 +1,1 @@
+Seq (Eq "a" (Value 10)) (Seq (Eq "b" (Value 5)) (Seq (If (Smaller (Symbol "b") (Symbol "a")) (Eq "b" (Add (Symbol "a") (Value 1))) (Return (Symbol "b"))) (If (Smaller (Symbol "b") (Symbol "a")) (Eq "a" (Add (Symbol "b") (Value 1))) (Return (Symbol "a")))))

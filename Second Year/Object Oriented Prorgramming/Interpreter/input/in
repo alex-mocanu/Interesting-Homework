@@ -1,0 +1,5 @@
+nr=3
+var=nr*9+((nr>2)?nr:9)
+val=(nr-val)*((val>3)?2:3)
+3=val
+nr=(2+3)*(15-var)-15

@@ -1,0 +1,19 @@
+a = 1;
+x = 2;
+
+while ( a + 3 < 7)
+{
+	a = a + 1;
+	x = x * 3;
+}
+
+if (x + 1 == 55) then
+{
+	;
+}
+else
+{
+	return 11;
+}
+
+return x - 1;

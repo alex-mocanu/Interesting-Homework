@@ -1,0 +1,31 @@
+a = 0;
+b = 0;
+
+if (a == b) then {
+    tmp = 42;
+    if (tmp == tmp) then {
+        a = a + tmp;
+        b = a + tmp;
+    } else {
+        c = a + b;
+    }
+} else {
+    c = a + b;
+}
+
+if (a == b) then {
+    c = 0;
+} else {
+    c = b - a;
+}
+
+while (a < c) {
+    c = c * 2;
+}
+
+if (a + b < c) then {
+    return c;
+} else {
+    c = a + b;
+    c = c - tmp;
+}

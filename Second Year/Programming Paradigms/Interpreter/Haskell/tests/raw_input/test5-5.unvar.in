@@ -1,0 +1,6 @@
+z = 0;
+while (z < 3) {
+    x = x + z;
+    z = z + 1;
+}
+return z;

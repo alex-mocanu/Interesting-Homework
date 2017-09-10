@@ -1,0 +1,63 @@
+  Nume: Mocanu Alexandru
+  Grupa: 331CB
+  Tema 2, Sisteme de Operare
+
+  Aceasta tema presupune implementarea unor functionalitati de baza ale unui
+  shell.
+
+  Rularea comenzilor se face folosind functia parse_command, care trateaza mai
+  multe cazuri, dupa cum se descrie mai jos.
+
+  * Primul lucru ce se poate avea in vedere este tratarea redirectarilor.
+  - Pentru a realiza acest lucru, facem o salvare a intrarilor si iesirilor
+  standard, folosind functia store_std.
+  - Dupa aceea incepem tratarea propriu-zisa a redirectarii folosind functia
+  treat_redirect. Aceasta functie verifica ce descriptori standard sunt vizati
+  de redirectari si realizeaza redirectarea acestora in fisierele
+  corespunzatoare, tinand cont si de modul de redirectare, simplu sau cu append.
+  Descriptorii de fisier sunt inchisi dupa redirectare. In caz de eroare functia
+  returneaza -1.
+  - Dupa finalizarea unei comenzi in care se fac redirectari trebuie facuta
+  restaurarea descriptorilor standard la vechea stare. Acest lucru se face
+  apeland functia restore_std.
+
+  * Comenzile simple se parseaza si se executa folosind functia parse_simple.
+  - Intr-o prima faza sunt tratate comenzile interne: exit, quit, cd. Exit si
+  quit realizeaza amandoua inchiderea shell-ului prin apelarea functiei
+  shell_exit, care doar returneaza codul de iesire din shell. Daca in schimb se
+  face o redirectare a intrarii dintr-o locatie invalida, iesirea din shell
+  esueaza. Cd realizeaza schimbarea directorului curent, prin apelul functiei
+  shell_cd, in cazul in care directorul respectiv exista si calea catre el este
+  data corespunzator, in caz contrar afisandu-se un mesaj de eroare.
+  - In a doua faza, se trateaza asignarea de valori.
+  - Nu in ultimul rand, se realizeaza rularea de comenzi externe. Pentru aceasta
+  se creeaza un nou proces, in care se incarca executabilul aferent comenzii ce
+  se doreste a fi executata. In parinte se asteapta terminarea rularii
+  procesului copil si se returneaza codul de eroare returnat de acesta ca
+  rezultat al functiei parse_simple.
+
+  * Rularea secventiala a comenzilor se face apeland parse_command mai intai pe
+  o comanda si apoi pe cealalta.
+
+  * Se pot rula si comenzi in paralel folosind functia do_in_parallel.
+  In aceasta functie se pornesc doua procese care ruleaza fiecare comanda sa,
+  folosind functia parse_command. Procesul parinte asteapta terminarea executiei
+  proceselor copil. Daca vreunul dintre procese a esuat, se returneaza esec,
+  altfel succes.
+
+  * Pentru a rula doua comenzi folosind operatorul '||', se ruleaza mai intai
+  prima comanda. Daca aceasta esueaza, se ruleaza si a doua comanda. Daca prima
+  comanda se termina cu succes, a doua comanda nu se mai executa.
+
+  * Pentru a rula doua comenzi folosind operatorul '&&', se ruleaza mai intai
+  prima comanda. Daca aceasta se termina cu succes, se ruleaza si a doua
+  comanda. Altfel, a doua comanda nu se va mai executa.
+
+  * Pipe-urile anonime sunt si ele suporate prin functia do_on_pipe.
+  Se creeaza mai intai un pipe anonim si un proces copil. Procesul copil este
+  cel care scrie in pipe, de aceea in procesul copil se inchide capatul de
+  citire. Copilul executa comanda cu functia parse_command si returneaza codul
+  ei de eroare. Parintele actioneaza pe post de cititor, deci inchide capatul de
+  scriere al pipe-ului, salveaza intrarea standard si face redirectarea intrarii
+  la capatul de citire al pipe-ului. Dupa aceasta parintele isi executa si el
+  comanda. Succesul rularii este dat de rezultatul procesului parinte.

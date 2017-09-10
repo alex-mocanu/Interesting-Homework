@@ -1,0 +1,66 @@
+  Nume: Mocanu Alexandru
+  Grupa: 331CB
+  Tema 3, Sisteme de Operare
+
+  Scopul temei este implementarea unui simulator al procesului de mapare a
+  memoriei, folosind drept memorie virtuala un fragment din memoria virtuala a
+  procesului si drept memorie fizica doua fisiere: unul pentru ram si altul
+  pentru swap.
+
+
+  Pentru a realiza acest simulator am implementat o interfata formata din patru
+  functii:
+  1. vmsim_init - realizeaza initializarea sistemului, care consta in setarea
+  unei rutine de tratare a intreruperilor, care se va ocupa de gestionarea
+  page-fault-urilor, care se produc semnale de tipul SIGSEGV. Despre rutina de
+  tratare vom vorbi mai tarziu.
+  2. vmsim_cleanup - realizeaza deinregistrarea rutinei de tratare a
+  intreruperii.
+  3. vm_alloc - realizeaza alocarea memoriei virtuale a procesului si
+  deschiderea fisierelor pentru ram si pentru swap. Se realizeaza de asemenea
+  initializarea tabelei de pagini, aceasta presupunand initializarea intrarilor
+  in tabela de pagini si a frame-urilor la valorile default.
+  4. vm_free - realizeaza dealocarea resurselor si inchiderea fisierelor ram si
+  swap pentru un proces.
+
+
+  Avem nevoie in implementarea noastra de niste structuri specifice (pe care le
+  gasim in helpers.h):
+  1. vm_map - contine adresa de start a spatiului de adresa al memoriei
+  virtuale si handle-urile fisierelor ram si swap
+  2. frame - contine numarul de ordine al unui frame si legatura catre intrarea
+  din tabela de pagini de care apartine
+  3. page_table_entry - contine starea curenta si starea precedenta a unei
+  pagini, statusul de dirty/clean, protectia paginii (NONE, READ, WRITE), adresa
+  de start a paginii si frame-ul peste care este mapata pagina (in cazul in care
+  pagina este mapata)
+  4. page_table - contine numarul de pagini, numarul de frame-uri de ram, un
+  atribut vm_map, o lista cu intrarile in tabela, frame-urile de ram si de swap
+
+
+  Pentru rutina de tratare a intreruperii, in cazul unui swap-out, prima pagina
+  ram este cea careia i se face intotdeauna swap-out.
+  In cazul in care facem un swap-out unei pagini, aceasta va deveni clean.
+  Rutina de tratare a intreruperii trateaza urmatoarele situatii:
+  1. Pagina nu este inca mapata
+  Primul lucru pe care incercam sa il facem in aceasta situatie este sa gasim o
+  pagina de ram care sa nu fie ocupata. In cazul in care reusim sa gasim o
+  astfel de pagina, facem maparea adresei noastre virtuale peste acea pagina. In
+  acest proces realizam demaparea paginii virtuale si maparea paginii fizice cu
+  drepturi de read la adresa fostei pagini virtuale.
+  In cazul in care nu gasim o pagina de ram disponibila, cautam prima pagina de
+  swap nefolosita. Facem swap-out in acest frame de swap si dupa realizam
+  maparea cu drepturi de read peste pagina de ram eliberata.
+
+  2. Pagina este mapata in ram
+  In aceasta situatie, intrucat pagina se afla in ram cu drepturi de read,
+  inseamna ca am inregistrat un page-fault la scrierea in acea pagina. Prin
+  urmare, adaugam si drepturi de write pe acea pagina si o marcam ca fiind
+  dirty.
+
+  3. Pagina este mapata in swap
+  In aceasta situatie, trebuie sa realizam un swap-in. Cautam primul frame de
+  swap disponibil si facem swap-out in acest frame. Dupa aceea facem swap in
+  paginii din swap vizate. In urma swap-in, fosta pagina de swap ocupata este
+  marcata ca fiind disponibila (nu mai este legata la vreo intrare in tabela de
+  pagini).
